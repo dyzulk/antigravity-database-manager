@@ -15,6 +15,27 @@ https://github.com/ag-donald/Antigravity-Database-Manager
 - **AI Agent Skill Integration**: Packaged with a `SKILL.md` definition at the root, making it fully compatible and auto-loadable by AI agents in the Antigravity IDE.
 - **AI-Powered Auto-Renamer (auto_rename.py)**: A script that parses conversation logs, extracts initial user requests, and uses the Gemini API to automatically rename conversation titles in both task.md and the SQLite database.
 - **Improved Root Git Configuration**: Added root-level .gitignore and ignore rules to prevent committing development keys or SQLite state caches.
+- **Dynamic Path Resolution**: Removed all hardcoded absolute user paths (`C:\Users\dyzulk\...`) from scripts and metadata, replacing them with dynamic, cross-platform path resolution based on standard environment locations (`~` / `%USERPROFILE%`) and script locations.
+
+## Antigravity 2.0 Support
+
+This manager fully supports Antigravity 2.0+, which separates the standalone **Antigravity Agent** command center from the integrated **Antigravity IDE** editor environment. 
+
+### Data Paths Probed:
+- **SQLite Database (state.vscdb)**: Probes `%APPDATA%\Antigravity IDE` (new 2.0+ default) first, and falls back to `%APPDATA%\Antigravity` (legacy/standalone).
+- **Gemini Base Directory**: Probes `~/.gemini/antigravity-ide` (new 2.0+ default) first, and falls back to `~/.gemini/antigravity` (legacy/standalone).
+
+### Environment Overrides:
+You can manually force the database manager to target a specific database or directory structure by setting the following environment variables before launching the tool:
+- `AGMERCIUM_DB_PATH`: The absolute file path to the target `state.vscdb` database.
+- `AGMERCIUM_GEMINI_BASE`: The absolute path to the Gemini home directory (containing `brain` and `conversations` subdirectories).
+
+Example (PowerShell):
+```powershell
+$env:AGMERCIUM_DB_PATH="C:\custom\path\to\state.vscdb"
+$env:AGMERCIUM_GEMINI_BASE="C:\custom\path\to\.gemini\antigravity"
+python scripts/__main__.py scan
+```
 
 ## Directory Structure
 
@@ -23,6 +44,7 @@ https://github.com/ag-donald/Antigravity-Database-Manager
 - `scripts/` - The core application codebase (cloned from upstream with custom features added).
   - `scripts/config/settings.json.example` - Example configuration file for credentials/API keys.
   - `scripts/auto_rename.py` - Custom script for AI-powered conversation renaming.
+  - `scripts/delayed_recover.py` - Reusable background daemon script to execute recovery after the IDE has closed.
   - `scripts/__main__.py` - Core CLI/TUI entrypoint for database scan, recovery, diagnostics, repair, merge, and workspace utilities.
 
 ## How to Use
@@ -45,6 +67,9 @@ python __main__.py --headless
 
 # Run the AI conversation auto-renamer (requires Gemini API Key configured in config/settings.json)
 python auto_rename.py
+
+# Run delayed recovery (pass the target workspace path if you wish to run a workspace migration as well)
+python delayed_recover.py [target_workspace_path]
 ```
 
 Refer to the documentation in the `scripts` directory or the `SKILL.md` at the root for a complete list of commands, safety features, and recovery options.

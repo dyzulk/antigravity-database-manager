@@ -11,22 +11,37 @@ This skill provides a comprehensive database administration, analysis, and recov
 
 ## Technical Context
 The Antigravity IDE stores session metadata and conversation history across three parallel components:
-1. Raw Session Data: Saved as binary Protocol Buffer (.pb) files in C:\Users\dyzulk\.gemini\antigravity-ide\conversations\.
-2. UI Sidebar Index: Stored in the SQLite database state.vscdb under the key antigravityUnifiedStateSync.trajectorySummaries in the ItemTable table as a Base64-encoded Protobuf index, and as JSON under the key chat.ChatSessionStore.index.
-3. Configuration and Binding: Managed inside the sibling storage.json file.
+1. Raw Session Data: Saved as binary Protocol Buffer (.pb) files in:
+   - Antigravity IDE 2.0+ (Default): `~/.gemini/antigravity-ide/conversations/`
+   - Antigravity Agent 2.0+ (Standalone): `~/.gemini/antigravity/conversations/`
+2. UI Sidebar Index: Stored in the SQLite database `state.vscdb` under the key `antigravityUnifiedStateSync.trajectorySummaries` in the `ItemTable` table as a Base64-encoded Protobuf index, and as JSON under the key `chat.ChatSessionStore.index`.
+   - Windows (2.0+ IDE): `%APPDATA%\Antigravity IDE\User\globalStorage\state.vscdb`
+   - macOS (2.0+ IDE): `~/Library/Application Support/Antigravity IDE/User/globalStorage/state.vscdb`
+   - Linux (2.0+ IDE): `~/.config/Antigravity IDE/User/globalStorage/state.vscdb`
+   - Legacy/Standalone App: The folders are named `Antigravity` instead of `Antigravity IDE`.
+3. Configuration and Binding: Managed inside the sibling `storage.json` file.
 
 Unclean shutdowns, IDE upgrades, or workspace path changes frequently cause the internal SQLite index to lose its mappings while raw files remain intact on disk. This skill contains the modules required to scan, recover, repair, and manage all three layers.
+
+### Antigravity 2.0 Agent vs IDE Separation
+Antigravity 2.0 separates the standalone agent command center (`antigravity`) from the integrated editor environment (`antigravity-ide`). This database manager supports both environments by:
+- Automatically probing both folders and using appropriate fallbacks.
+- Allowing manual path overrides via environment variables:
+  - `AGMERCIUM_DB_PATH`: Override path to state.vscdb.
+  - `AGMERCIUM_GEMINI_BASE`: Override base Gemini data directory containing brain/conversations.
 
 ---
 
 ## Skill Modules
+
+All modules are executable via PowerShell/Command Prompt. Replace `$env:USERPROFILE` with your home directory path (or `~` on macOS/Linux).
 
 ### Module 1: Database Overview (scan)
 This module scans the active database and all available backups in the global directory, generating a comparison table detailing sizes, number of conversations, titled entries, bound workspaces, and index counts.
 
 Command:
 ```powershell
-$env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" scan
+$env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" scan
 ```
 
 ---
@@ -36,7 +51,7 @@ This module automates the complete 6-phase recovery process to restore disappear
 
 Command:
 ```powershell
-$env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" recover
+$env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" recover
 ```
 
 ---
@@ -46,7 +61,7 @@ This module runs a comprehensive health check on the active database. It evaluat
 
 Command:
 ```powershell
-$env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" health
+$env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" health
 ```
 
 ---
@@ -56,7 +71,7 @@ This module scans the database at a byte level to detect known structural corrup
 
 Command:
 ```powershell
-$env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" diagnose
+$env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" diagnose
 ```
 
 ---
@@ -66,7 +81,7 @@ This module autonomously repairs all database corruptions identified by the diag
 
 Command:
 ```powershell
-$env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" repair
+$env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" repair
 ```
 
 ---
@@ -80,15 +95,15 @@ This module merges conversation entries from a source database into the current 
 Commands:
 *   **Additive merge:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" merge --source <SOURCE_VSCDB_PATH>
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" merge --source <SOURCE_VSCDB_PATH>
     ```
 *   **Overwrite merge:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" merge --source <SOURCE_VSCDB_PATH> --strategy overwrite
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" merge --source <SOURCE_VSCDB_PATH> --strategy overwrite
     ```
 *   **Cherry-pick specific UUIDs:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" merge --source <SOURCE_VSCDB_PATH> --cherry-pick "uuid1,uuid2"
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" merge --source <SOURCE_VSCDB_PATH> --cherry-pick "uuid1,uuid2"
     ```
 
 ---
@@ -99,15 +114,15 @@ This module manages the lifecycle of database backups. It lists backups, creates
 Commands:
 *   **List all backups:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" backup list
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" backup list
     ```
 *   **Create a manual backup:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" backup create
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" backup create
     ```
 *   **Restore a backup by index:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" backup restore <INDEX>
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" backup restore <INDEX>
     ```
 
 ---
@@ -117,7 +132,7 @@ This module creates a new, empty state.vscdb database file with the correct sche
 
 Command:
 ```powershell
-$env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" create --output <OUTPUT_PATH>
+$env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" create --output <OUTPUT_PATH>
 ```
 
 ---
@@ -132,19 +147,19 @@ This module manages individual conversation entries inside the database index.
 Commands:
 *   **List all conversation index entries:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" conversations list
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" conversations list
     ```
 *   **Show raw JSON payload of a UUID:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" conversations show <UUID>
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" conversations show <UUID>
     ```
 *   **Delete a conversation entry by UUID:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" conversations delete <UUID> --force
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" conversations delete <UUID> --force
     ```
 *   **Rename a conversation title by UUID:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" conversations rename <UUID> "<NEW_TITLE>"
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" conversations rename <UUID> "<NEW_TITLE>"
     ```
 
 ---
@@ -158,15 +173,15 @@ This module manages workspace pathways bound to conversation entries in the data
 Commands:
 *   **List bound workspace paths:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" workspace list
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" workspace list
     ```
 *   **Run path checks:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" workspace check
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" workspace check
     ```
 *   **Migrate conversation bindings to a new workspace path:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" workspace migrate <NEW_ABSOLUTE_PATH>
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" workspace migrate <NEW_ABSOLUTE_PATH>
     ```
 
 ---
@@ -181,15 +196,15 @@ This module inspects and patches the configuration storage settings inside stora
 Commands:
 *   **Inspect storage configuration:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" storage inspect
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" storage inspect
     ```
 *   **Patch storage key path:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" storage patch "<KEY_PATH>" "<VALUE>"
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" storage patch "<KEY_PATH>" "<VALUE>"
     ```
 *   **Delete storage key path:**
     ```powershell
-    $env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" storage delete "<KEY_PATH>"
+    $env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\__main__.py" storage delete "<KEY_PATH>"
     ```
 
 ---
@@ -199,7 +214,7 @@ This module dynamically parses the transcript logs of all conversations, extract
 
 Command:
 ```powershell
-$env:PYTHONIOENCODING="utf-8"; python "C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\auto_rename.py"
+$env:PYTHONIOENCODING="utf-8"; python "$env:USERPROFILE\.gemini\config\skills\antigravity-database-manager\scripts\auto_rename.py"
 ```
 
 ---

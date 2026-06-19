@@ -13,8 +13,18 @@ from datetime import datetime, timezone, timedelta
 # Resolve paths
 script_dir = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(script_dir, "config", "settings.json")
-brain_dir = r"C:\Users\dyzulk\.gemini\antigravity-ide\brain"
 manager_script = os.path.join(script_dir, "__main__.py")
+
+# Dynamic discovery of Brain directory
+sys.path.append(script_dir)
+try:
+    from src.core.environment import EnvironmentResolver
+    brain_dir = os.path.join(EnvironmentResolver.get_gemini_base_path(), "brain")
+except Exception:
+    home = os.path.expanduser("~")
+    primary_brain = os.path.join(home, ".gemini", "antigravity-ide", "brain")
+    fallback_brain = os.path.join(home, ".gemini", "antigravity", "brain")
+    brain_dir = fallback_brain if not os.path.exists(primary_brain) and os.path.exists(fallback_brain) else primary_brain
 
 def load_config():
     if not os.path.exists(config_path):
@@ -191,11 +201,9 @@ def main():
         print(f"Error: Brain directory not found at {brain_dir}")
         sys.exit(1)
         
-    # Import scanner and lifecycle module dynamically
-    sys.path.append(script_dir)
+    # Import scanner module dynamically
     try:
         from src.core.db_scanner import list_conversations
-        from src.core.lifecycle import EnvironmentResolver
         db_path = EnvironmentResolver.get_antigravity_db_path()
     except Exception as e:
         print(f"Error loading database modules: {e}")

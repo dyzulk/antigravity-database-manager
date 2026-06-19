@@ -3,8 +3,9 @@ import sys
 import time
 import subprocess
 
-# Log file to see progress after IDE closes
-log_file = r"C:\Users\dyzulk\.gemini\config\skills\antigravity-database-manager\scripts\delayed_recover.log"
+# Resolve paths relative to script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+log_file = os.path.join(script_dir, "delayed_recover.log")
 
 def log(msg):
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -35,7 +36,6 @@ def main():
     log("Antigravity IDE has closed! Waiting 3 seconds for file locks to release...")
     time.sleep(3)
     
-    script_dir = os.path.dirname(os.path.abspath(__file__))
     main_script = os.path.join(script_dir, "__main__.py")
     
     # Inherit full environment to preserve USERPROFILE for tilde (~) expansion
@@ -48,11 +48,15 @@ def main():
     res = subprocess.run(cmd_recover, env=env, capture_output=True, text=True)
     log(f"Recover Output:\n{res.stdout}\n{res.stderr}")
     
-    # Run workspace migrate
-    log("Running workspace migrate...")
-    cmd_migrate = ['python', main_script, 'workspace', 'migrate', 'c:/Users/dyzulk/Documents/twinpath/icons']
-    res = subprocess.run(cmd_migrate, env=env, capture_output=True, text=True)
-    log(f"Migrate Output:\n{res.stdout}\n{res.stderr}")
+    # Run workspace migrate if path argument is supplied
+    if len(sys.argv) > 1:
+        target_workspace = sys.argv[1]
+        log(f"Running workspace migrate to '{target_workspace}'...")
+        cmd_migrate = ['python', main_script, 'workspace', 'migrate', target_workspace]
+        res = subprocess.run(cmd_migrate, env=env, capture_output=True, text=True)
+        log(f"Migrate Output:\n{res.stdout}\n{res.stderr}")
+    else:
+        log("No target workspace path provided in command-line arguments. Skipping migration step.")
     
     # Run auto rename
     log("Running auto rename...")

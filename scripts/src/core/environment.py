@@ -18,17 +18,26 @@ class EnvironmentResolver:
     @staticmethod
     def get_antigravity_db_path() -> str:
         """Returns the OS-specific absolute path to the IDE's state.vscdb."""
+        # Allow environment override
+        env_path = os.environ.get("AGMERCIUM_DB_PATH")
+        if env_path:
+            return env_path
+
         home = os.path.expanduser("~")
         if sys.platform.startswith("win"):
             appdata = os.environ.get("APPDATA", os.path.join(home, "AppData", "Roaming"))
-            return os.path.join(appdata, "Antigravity IDE", "User", "globalStorage", "state.vscdb")
+            primary = os.path.join(appdata, "Antigravity IDE", "User", "globalStorage", "state.vscdb")
+            fallback = os.path.join(appdata, "Antigravity", "User", "globalStorage", "state.vscdb")
         elif sys.platform.startswith("darwin"):
-            return os.path.join(
-                home, "Library", "Application Support", "antigravity",
-                "User", "globalStorage", "state.vscdb",
-            )
+            primary = os.path.join(home, "Library", "Application Support", "Antigravity IDE", "User", "globalStorage", "state.vscdb")
+            fallback = os.path.join(home, "Library", "Application Support", "antigravity", "User", "globalStorage", "state.vscdb")
         else:  # Linux / BSD / WSL
-            return os.path.join(home, ".config", "Antigravity", "User", "globalStorage", "state.vscdb")
+            primary = os.path.join(home, ".config", "Antigravity IDE", "User", "globalStorage", "state.vscdb")
+            fallback = os.path.join(home, ".config", "Antigravity", "User", "globalStorage", "state.vscdb")
+
+        if not os.path.exists(primary) and os.path.exists(fallback):
+            return fallback
+        return primary
 
     @staticmethod
     def get_storage_json_path() -> str:
@@ -38,8 +47,19 @@ class EnvironmentResolver:
 
     @staticmethod
     def get_gemini_base_path() -> str:
-        """Returns the path to ~/.gemini/antigravity/."""
-        return os.path.join(os.path.expanduser("~"), ".gemini", "antigravity-ide")
+        """Returns the path to the Gemini data directory (~/.gemini/antigravity-ide or ~/.gemini/antigravity)."""
+        # Allow environment override
+        env_path = os.environ.get("AGMERCIUM_GEMINI_BASE")
+        if env_path:
+            return env_path
+
+        home = os.path.expanduser("~")
+        primary = os.path.join(home, ".gemini", "antigravity-ide")
+        fallback = os.path.join(home, ".gemini", "antigravity")
+
+        if not os.path.exists(primary) and os.path.exists(fallback):
+            return fallback
+        return primary
 
     @staticmethod
     def is_antigravity_running() -> bool:
@@ -47,10 +67,10 @@ class EnvironmentResolver:
         try:
             if sys.platform.startswith("win"):
                 res = subprocess.run(
-                    ["tasklist", "/FI", "IMAGENAME eq Antigravity.exe", "/NH"],
+                    ["tasklist", "/NH"],
                     capture_output=True, text=True, timeout=10,
                 )
-                return "Antigravity.exe" in res.stdout
+                return "Antigravity.exe" in res.stdout or "Antigravity IDE.exe" in res.stdout
             else:
                 res = subprocess.run(
                     ["pgrep", "-f", "antigravity"],
