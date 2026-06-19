@@ -49,8 +49,21 @@ python scripts/__main__.py scan
 
 ## How to Use
 
-### As an AI Agent Skill
-Since this repository has a `SKILL.md` at the root and is placed in the Antigravity skills directory, it is automatically discovered by the IDE's agent runner. Developer agents can call it directly to run database scans, diagnostics, and recovery pipelines when asked.
+### Installation via CLI `skills` (Recommended)
+You can easily install this skill globally or locally for your agents using the `skills` CLI:
+
+```bash
+# Install globally for all supported agents
+npx skills add dyzulk/antigravity-database-manager -g
+
+# Install locally in a project
+npx skills add dyzulk/antigravity-database-manager
+```
+
+The installer will automatically detect all compatible agent environments (such as Cursor, Cline, Antigravity, Zed, etc.) and register the skill.
+
+### Manual Skill Registration
+Alternatively, if you are not using the `skills` CLI, since this repository has a `SKILL.md` at the root and is placed in your global skills directory, it is automatically discovered by the Antigravity IDE's agent runner. Developer agents can call it directly to run database scans, diagnostics, and recovery pipelines when asked.
 
 ### Running Manually
 For manual execution of the CLI or the interactive Terminal User Interface (TUI):
