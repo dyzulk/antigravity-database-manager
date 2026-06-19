@@ -1,0 +1,5 @@
+{
+  "gemini_api_key": "YOUR_GEMINI_API_KEY",
+  "model_name": "gemini-2.5-flash",
+  "max_title_length": 40
+}

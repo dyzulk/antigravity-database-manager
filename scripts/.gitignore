@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+
+# Build & Distribution
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment
+.env
+.venv/
+env/
+venv/
+config/settings.json
+
+# Backups created by this tool
+*.agmercium_recovery_*
+backups/
+
+# Agent temporary files
+.agents/
+
+# Database files (should not be committed)
+*.vscdb
+*.golden_build
+
+# Archives (release artifacts)
+*.7z
+*.zip
